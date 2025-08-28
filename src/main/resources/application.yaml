@@ -1,0 +1,26 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /chatapp
+
+spring:
+  jpa:
+    hibernate:
+      naming: #tắt tự động đổi tên trong entity
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    show-sql: true
+  datasource:
+    url: "jdbc:mysql://localhost:3306/chatapp"
+    username: root
+    password: vrain2403
+
+jwt:
+  signerKey: "cm/Gq7l0JEeYl+VIjShBpiS/ko0DxckvG0uHK2o7c55GNIeWjJy70m57vGCgib4q"
+
+logging:
+  level:
+    org:
+      springframework:
+        security: DEBUG
+        web: DEBUG
+    root: INFO
