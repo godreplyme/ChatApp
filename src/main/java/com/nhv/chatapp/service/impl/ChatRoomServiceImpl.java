@@ -121,7 +121,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
                                 .senderName(chatroom.getLastMessage().getSender().getName())
                                 .sentAt(chatroom.getLastMessage().getSentAt())
                                 .messageType(chatroom.getLastMessage().getType().name())
-                                .isLastRead(chatroom.getLastMessage().getId().equals(userchatroom.getLastReadMessage().getId())? true:false)
+                                .isLastRead((userchatroom.getLastReadMessage() != null && chatroom.getLastMessage().getId().equals(userchatroom.getLastReadMessage().getId()))? true:false)
                                 .build();
                     }
                     return ChatRoomResponse.builder()

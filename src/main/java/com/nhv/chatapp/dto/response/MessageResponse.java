@@ -18,6 +18,8 @@ public class MessageResponse {
     private String content;
     private String senderId;
     private String senderName;
+    private String senderUsername;
+    private String senderAvatar;
     private Instant sentAt;
     private String messageType;
     private String messageStatus;

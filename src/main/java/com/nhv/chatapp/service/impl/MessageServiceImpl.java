@@ -86,6 +86,7 @@ public class MessageServiceImpl implements MessageService {
                 .messageId(message.getId())
                 .content(message.getContent())
                 .senderId(message.getSender().getId())
+                .senderUsername(message.getSender().getUsername())
                 .senderName(message.getSender().getName())
                 .sentAt(message.getSentAt())
                 .replyTo(message.getReplyTo() != null ? MessageResponse.ReplyMessage.builder()
@@ -113,7 +114,7 @@ public class MessageServiceImpl implements MessageService {
         // Lấy userchatroom với lastReadMessage
         Userchatroom userChatroom = this.userChatRoomRepository.findByUserIdAndChatRoomId(currentUser.getId(), chatRoomId);
         
-        PageRequest pageRequest = PageRequest.of(page, size, Sort.by("sentAt").descending());
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by("sentAt").ascending());
         Page<Message> messagePage = this.messageRepository.findByChatRoomId(chatRoomId, pageRequest);
 
 
@@ -128,7 +129,7 @@ public class MessageServiceImpl implements MessageService {
                 .map(Message::getId)
                 .collect(Collectors.toList());
         if(messageIds.isEmpty()) return null;
-        Map<String, List<MemberReadDTO>> readInfoByMessage = this.getReadInfoByLastReadMessage(messageIds, chatRoomId);
+        Map<String, List<MemberReadDTO>> readInfoByMessage = this.getReadInfoByLastReadMessage(messageIds, chatRoomId, currentUser.getId());
 
         List<MessageResponse> messages = messagePage.getContent().stream()
                 .map(message -> {
@@ -144,6 +145,8 @@ public class MessageServiceImpl implements MessageService {
                                 .content(message.getContent())
                                 .senderId(message.getSender().getId())
                                 .senderName(message.getSender().getName())
+                                .senderUsername(message.getSender().getUsername())
+                                .senderAvatar(message.getSender().getAvatar())
                                 .sentAt(message.getSentAt())
                                 .messageType(message.getType().name())
                                 .messageStatus(message.getMessageStatus().name())
@@ -213,7 +216,7 @@ public class MessageServiceImpl implements MessageService {
         }
     }
 
-    private Map<String, List<MemberReadDTO>> getReadInfoByLastReadMessage(List<String> messageIds, String chatRoomId) {
+    private Map<String, List<MemberReadDTO>> getReadInfoByLastReadMessage(List<String> messageIds, String chatRoomId, String userId) {
 
         if (messageIds.isEmpty()) {
             return new HashMap<>();
@@ -234,7 +237,7 @@ public class MessageServiceImpl implements MessageService {
             for (Userchatroom member : members) {
                 // Check xem member này đã đọc message này chưa
                 // Logic: lastReadMessage.sentAt >= message.sentAt → đã đọc
-                if (member.getLastReadMessage() != null && member.getLastReadMessage().getSentAt().compareTo(message.getSentAt()) >= 0) {
+                if (!message.getSender().getId().equals(userId) && member.getLastReadMessage() != null && member.getLastReadMessage().getSentAt().compareTo(message.getSentAt()) >= 0) {
 
                     readByUsers.add(MemberReadDTO.builder()
                             .userId(member.getUser().getId())

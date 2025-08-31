@@ -58,6 +58,12 @@ public class Userchatroom {
 
     @PrePersist
     public void prePersist() {
-        this.joinedAt = Instant.now();}
+        this.joinedAt = Instant.now();
+        this.readAt = Instant.now();
+    }
 
+    @PreUpdate
+    public void preUpdate() {
+        this.readAt = Instant.now();
+    }
 }
