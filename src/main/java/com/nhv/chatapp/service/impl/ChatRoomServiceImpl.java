@@ -6,6 +6,7 @@ import com.nhv.chatapp.dto.request.CreateChatRoomRequest;
 import com.nhv.chatapp.dto.response.ChatRoomResponse;
 import com.nhv.chatapp.dto.response.MessageResponse;
 import com.nhv.chatapp.entity.Chatroom;
+import com.nhv.chatapp.entity.Contact;
 import com.nhv.chatapp.entity.User;
 import com.nhv.chatapp.entity.Userchatroom;
 import com.nhv.chatapp.entity.enums.RoomRole;
@@ -54,18 +55,19 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         RoomType roomType = isPrivate ? RoomType.PRIVATE : RoomType.PUBLIC;
         User recipient = null;
 
-        if (!isPrivate) {
-            if (createChatRoomRequest.getGroupName() == null || createChatRoomRequest.getGroupName().trim().isEmpty()) {
-                throw new BadRequestException("Group name cannot be empty");
-            }
-        } else if (isPrivate) {
+         if (isPrivate) {
             recipient = this.userRepository.findById(memberIds.stream().filter(memberId -> !memberId.equals(currentUser.getId())).findFirst()
                             .orElseThrow(() -> new BadRequestException("Recipient not found")))
                     .orElseThrow(() -> new ResourceNotFoundException("User not found"));
             if (this.chatRoomRepository.existsPrivateChatroomByUserIds(currentUser.getId(), recipient.getId())) {
-                throw new BadRequestException("Chat room already exists");
+                return null;
+            }
+        }else if (!isPrivate) {
+            if (createChatRoomRequest.getGroupName() == null || createChatRoomRequest.getGroupName().trim().isEmpty()) {
+                throw new BadRequestException("Group name cannot be empty");
             }
         }
+
 
         Chatroom chatRoom = Chatroom.builder()
                 .type(roomType)
@@ -109,10 +111,56 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         Authentication authentication = SecurityUtils.getAuthentication();
         User currentUser = this.userRepository.findByUsername(authentication.getName()).orElseThrow(() -> new ResourceNotFoundException("User not found"));
         List<Userchatroom> userchatrooms = this.userChatRoomRepository.findByUserIdOrderByJoinedAtDesc(currentUser.getId());
+        List<String> privateRoomIds = userchatrooms.stream()
+                .filter(ucr -> ucr.getChatRoom().getType()==RoomType.PRIVATE)
+                .map(ucr -> ucr.getChatRoom().getId()).toList();
+        Map<String, User> otherMembersMap = new HashMap<>();
+        List<String> otherMemberId = new ArrayList<>();
+        if(!privateRoomIds.isEmpty()) {
+            List<Userchatroom> privateMembers= this.userChatRoomRepository.findByChatRoomIds(privateRoomIds);
+            for(Userchatroom userchatroom : privateMembers) {
+                if(!userchatroom.getUser().getId().equals(currentUser.getId())) {
+                    otherMembersMap.put(userchatroom.getChatRoom().getId(), userchatroom.getUser());
+                    otherMemberId.add(userchatroom.getUser().getId());
+                }
+            }
+        }
+
+        Map<String, Contact> contactMap = new HashMap<>();
+        if(!otherMemberId.isEmpty()) {
+            List<Contact> contacts = this.contactRepository.findByUserIdAndContactUserIds(currentUser.getId(),otherMemberId);
+            for(Contact contact : contacts) {
+                contactMap.put(contact.getContactUser().getId(), contact);
+            }
+        }
         return userchatrooms.stream()
                 .map(userchatroom -> {
                     Chatroom chatroom = userchatroom.getChatRoom();
                     int memberCount = this.userChatRoomRepository.countByChatRoomId(chatroom.getId());
+
+                    String chatRoomName;
+                    String chatRoomAvatar;
+                    if(chatroom.getType()==RoomType.PRIVATE) {
+                        User otherMember = otherMembersMap.get(chatroom.getId());
+                        if(otherMember != null) {
+                            chatRoomAvatar = otherMember.getAvatar();
+                            Contact contact = contactMap.get(otherMember.getId());
+                            if(contact != null && contact.getAlias() != null) {
+                                chatRoomName = contact.getAlias();
+                            }
+                            else  {
+                                chatRoomName = otherMember.getName();
+                            }
+                        }
+                        else  {
+                            chatRoomName = chatroom.getGroupName();
+                            chatRoomAvatar = chatroom.getGroupAvatar();
+                        }
+                    }
+                    else {
+                        chatRoomName = chatroom.getGroupName();
+                        chatRoomAvatar = chatroom.getGroupAvatar();
+                    }
                     MessageResponse lastMessage = null;
                     if (chatroom.getLastMessage() != null) {
                         lastMessage = MessageResponse.builder()
@@ -126,8 +174,8 @@ public class ChatRoomServiceImpl implements ChatRoomService {
                     }
                     return ChatRoomResponse.builder()
                             .chatRoomId(chatroom.getId())
-                            .chatRoomName(chatroom.getGroupName())
-                            .chatRoomAvatar(chatroom.getGroupAvatar())
+                            .chatRoomName(chatRoomName)
+                            .chatRoomAvatar(chatRoomAvatar)
                             .lastMessage(lastMessage)
                             .roomType(chatroom.getType())
                             .updatedAt(chatroom.getUpdateAt())

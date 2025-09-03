@@ -2,8 +2,7 @@ package com.nhv.chatapp.entity;
 
 import com.nhv.chatapp.entity.enums.ContactStatus;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.Instant;
 
@@ -11,6 +10,9 @@ import java.time.Instant;
 @Setter
 @Entity
 @Table(name = "contact")
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Contact {
     @Id
     @Column(name = "id", nullable = false, length = 36)

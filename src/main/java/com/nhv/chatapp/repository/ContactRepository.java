@@ -12,15 +12,6 @@ import java.util.Set;
 
 @Repository
 public interface ContactRepository extends JpaRepository<Contact, String> {
-    @Query("SELECT COUNT(c) > 0 FROM Contact c WHERE " +
-            "((c.user.id = :userId1 AND c.contactUser.id = :userId2) OR " +
-            "(c.user.id = :userId2 AND c.contactUser.id = :userId1)) AND " +
-            "c.status = :status")
-    boolean existsContactUsers(@Param("userId1") String userId1,
-                                         @Param("userId2") String userId2,
-                                         @Param("status") ContactStatus status);
-
-
     @Query("SELECT CASE " +
             "WHEN c.user.id = :currentUserId THEN c.contactUser.id " +
             "ELSE c.user.id END " +
@@ -32,4 +23,10 @@ public interface ContactRepository extends JpaRepository<Contact, String> {
                                       @Param("userIds") List<String> userIds);
 
     List<Contact> findByUserId(String userId);
+    Contact findByUserIdAndContactUserId(String userId, String contactUserId);
+
+    @Query("SELECT c FROM Contact c WHERE c.user.id = :userId AND c.contactUser.id IN :contactUserIds")
+    List<Contact> findByUserIdAndContactUserIds(
+            @Param("userId") String userId,
+            @Param("contactUserIds") List<String> contactUserIds);
 }

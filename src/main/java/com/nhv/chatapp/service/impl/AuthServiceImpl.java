@@ -17,15 +17,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class AuthServiceImpl implements AuthService {
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
     @Autowired
-    PasswordEncoder passwordEncoder;
+    private PasswordEncoder passwordEncoder;
     @Autowired
-    JWTService jwtService;
+    private JWTService jwtService;
 
 
     @Override
@@ -52,13 +51,15 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public UserAuthDTO login(LoginRequest loginRequest) {
-        User user = this.userRepository.findByUsername(loginRequest.getUsername()).orElseThrow(() -> new BadRequestException("User not found"));
+        User user = this.userRepository.findByUsername(loginRequest.getUsername().trim()).orElseThrow(() -> new BadRequestException("User not found"));
         if(!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
             throw new BadRequestException("Wrong password");
         }
         var token = this.jwtService.generateToken(user.getUsername());
         return UserAuthDTO.builder()
                 .token(token)
+                .avatar(user.getAvatar())
+                .name(user.getName())
                 .build();
     }
 }

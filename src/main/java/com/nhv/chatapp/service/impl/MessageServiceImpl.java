@@ -2,6 +2,7 @@ package com.nhv.chatapp.service.impl;
 
 import com.nhv.chatapp.dto.MemberReadDTO;
 import com.nhv.chatapp.dto.MessageStatusDTO;
+import com.nhv.chatapp.dto.request.CreateChatRoomRequest;
 import com.nhv.chatapp.dto.request.SendMessageRequest;
 import com.nhv.chatapp.dto.response.MessageResponse;
 import com.nhv.chatapp.dto.response.PageResponse;
@@ -17,6 +18,7 @@ import com.nhv.chatapp.repository.ChatRoomRepository;
 import com.nhv.chatapp.repository.MessageRepository;
 import com.nhv.chatapp.repository.UserChatRoomRepository;
 import com.nhv.chatapp.repository.UserRepository;
+import com.nhv.chatapp.service.ChatRoomService;
 import com.nhv.chatapp.service.MessageService;
 import com.nhv.chatapp.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +44,8 @@ public class MessageServiceImpl implements MessageService {
     private ChatRoomRepository chatRoomRepository;
     @Autowired
     private UserChatRoomRepository userChatRoomRepository;
+
+    private ChatRoomService chatRoomService;
 
     @Override
     @Transactional
@@ -105,6 +109,7 @@ public class MessageServiceImpl implements MessageService {
         User currentUser = this.userRepository.findByUsername(authentication.getName())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
+
         // Kiểm tra user có trong chatroom không
         boolean isMember = this.userChatRoomRepository.existsByUserIdAndChatRoomId(currentUser.getId(), chatRoomId);
         if (!isMember) {
@@ -114,7 +119,7 @@ public class MessageServiceImpl implements MessageService {
         // Lấy userchatroom với lastReadMessage
         Userchatroom userChatroom = this.userChatRoomRepository.findByUserIdAndChatRoomId(currentUser.getId(), chatRoomId);
         
-        PageRequest pageRequest = PageRequest.of(page, size, Sort.by("sentAt").ascending());
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by("sentAt").descending());
         Page<Message> messagePage = this.messageRepository.findByChatRoomId(chatRoomId, pageRequest);
 
 
@@ -187,7 +192,7 @@ public class MessageServiceImpl implements MessageService {
         }
 
         Userchatroom userchatroom = this.userChatRoomRepository.findByUserIdAndChatRoomId(currentUser.getId(), chatRoomId);
-        if(userchatroom.getLastReadMessage().getId().equals(chatroom.getLastMessage().getId())) {
+        if(userchatroom.getLastReadMessage() != null && userchatroom.getLastReadMessage().getId().equals(chatroom.getLastMessage().getId())) {
             return new MessageStatusDTO();
         }
         userchatroom.setLastReadMessage(chatroom.getLastMessage());

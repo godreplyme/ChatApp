@@ -82,4 +82,15 @@ public class ChatRoomController {
                 .build();
         return new ResponseEntity<>(apiResponse, HttpStatus.OK);
     }
+
+    @PutMapping("/{chatRoomId}/mark-read")
+    ResponseEntity<?> markRead(@PathVariable String chatRoomId)
+    {
+        APIResponse apiResponse = APIResponse.builder()
+                .message(APIResponseMessage.SUCCESSFULLY_UPDATED.name())
+                .result(this.messageService.markReadMessages(chatRoomId))
+                .status(HttpStatus.OK.value())
+                .build();
+        return new ResponseEntity<>(apiResponse, HttpStatus.OK);
+    }
 }

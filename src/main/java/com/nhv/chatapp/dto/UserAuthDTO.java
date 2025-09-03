@@ -12,6 +12,8 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserAuthDTO {
     String token;
+    String name;
+    String avatar;
 //    String name;
 //    String username;
 //    String email;

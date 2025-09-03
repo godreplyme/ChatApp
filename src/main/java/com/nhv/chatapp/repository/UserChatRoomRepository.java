@@ -13,6 +13,7 @@ import java.util.Set;
 public interface UserChatRoomRepository extends JpaRepository<Userchatroom, String> {
     List<Userchatroom> findByChatRoomId(String chatRoomId);
     boolean existsByUserIdAndChatRoomId(String userId, String chatRoomId);
+
     @Query("SELECT ucr FROM Userchatroom ucr " +
             "JOIN FETCH ucr.chatRoom cr " +
             "LEFT JOIN FETCH cr.lastMessage lm " +
@@ -36,4 +37,8 @@ public interface UserChatRoomRepository extends JpaRepository<Userchatroom, Stri
             "LEFT JOIN FETCH ucr.lastReadMessage lrm " +
             "WHERE ucr.chatRoom.id = :chatRoomId")
     List<Userchatroom> findByChatRoomIdWithUserAndLastRead(@Param("chatRoomId") String chatRoomId);
+
+    @Query("SELECT ucr FROM Userchatroom ucr " +
+            "WHERE ucr.chatRoom.id IN :chatRoomIds")
+    List<Userchatroom> findByChatRoomIds(@Param("chatRoomIds") List<String> chatRoomIds);
 }
